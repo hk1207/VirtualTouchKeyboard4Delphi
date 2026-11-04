@@ -27,6 +27,15 @@ object MainForm: TMainForm
       TabOrder = 0
       OnClick = ShowBtnClick
     end
+    object ShowKoreanBtn: TButton
+      Left = 176
+      Height = 25
+      Top = 6
+      Width = 150
+      Caption = 'Show Korean keyboard'
+      TabOrder = 2
+      OnClick = ShowKoreanBtnClick
+    end
     object HideBtn: TButton
       Left = 336
       Height = 25
