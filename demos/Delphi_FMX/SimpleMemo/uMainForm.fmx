@@ -27,6 +27,17 @@ object MainForm: TMainForm
       TextSettings.Trimming = None
       OnClick = ShowBtnClick
     end
+    object ShowKoreanBtn: TButton
+      Position.X = 180.000000000000000000
+      Position.Y = 10.000000000000000000
+      Size.Width = 150.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Text = 'Show Korean keyboard'
+      TextSettings.Trimming = None
+      OnClick = ShowKoreanBtnClick
+    end
     object HideBtn: TButton
       Position.X = 336.000000000000000000
       Position.Y = 11.000000000000000000

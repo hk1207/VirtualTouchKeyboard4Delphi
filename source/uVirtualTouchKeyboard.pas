@@ -42,6 +42,11 @@ const
 
   TABTIP_PROCNAME = 'TabTip.exe';
 
+  // Korean (Hangul) input support
+  KOREAN_LANGID          = $0412;
+  KOREAN_KLID            = '00000412';
+  IME_CMODE_NATIVE_HANGUL = $0001;
+
   {$IFDEF DELPHI16_UP}
   {$IF NOT DECLARED(pidWin32)}
   pidWin32 = 0;
@@ -89,6 +94,8 @@ type
       function ProcessExists(const aExeFileName : string) : Boolean;
       function GetIhmLocation(var aRect : TRect) : boolean;
 
+      FAutoKorean : boolean;
+
       property TabTipPath              : string   read GetTabTipPath;
       property CommonProgramFilesPath  : string   read GetCommonProgramFilesPath;
 
@@ -110,6 +117,26 @@ type
       /// </summary>
       function  ExecuteTabTip : boolean;
       /// <summary>
+      /// Returns true if a Korean keyboard layout is installed for the current user.
+      /// </summary>
+      function  IsKoreanInstalled : boolean;
+      /// <summary>
+      /// Loads the Korean keyboard layout and makes it the active input
+      /// language of the window aWnd (0 = the focused window of this thread, or
+      /// the foreground window). The virtual keyboard then shows the Hangul
+      /// layout and typed characters are composed as Hangul.
+      /// </summary>
+      function  ActivateKorean(aWnd : HWND = 0) : boolean;
+      /// <summary>
+      /// Switches the Korean IME between Hangul (True) and English/Alphanumeric
+      /// (False) mode for the window aWnd (0 = focused window).
+      /// </summary>
+      function  SetHangulMode(aHangul : boolean; aWnd : HWND = 0) : boolean;
+      /// <summary>
+      /// Activates the Korean layout in Hangul mode and shows the virtual keyboard.
+      /// </summary>
+      procedure ShowKorean(aWnd : HWND = 0);
+      /// <summary>
       /// Returns true if the virtual keyboard is visible.
       /// </summary>
       property Visible    : boolean  read GetVisible;
@@ -117,6 +144,13 @@ type
       /// Returns true if TabTip.exe is running.
       /// </summary>
       property Executing  : boolean  read GetExecuting;
+
+    published
+      /// <summary>
+      /// When True, Show activates the Korean layout and Hangul mode before
+      /// displaying the virtual keyboard.
+      /// </summary>
+      property AutoKorean : boolean  read FAutoKorean write FAutoKorean default False;
   end;
 
 {$IFDEF FPC}
@@ -137,6 +171,10 @@ uses
     {$ENDIF}
   {$ENDIF}
 
+function ImmGetContext(hWnd: HWND): THandle; stdcall; external 'imm32.dll' name 'ImmGetContext';
+function ImmReleaseContext(hWnd: HWND; hIMC: THandle): BOOL; stdcall; external 'imm32.dll' name 'ImmReleaseContext';
+function ImmGetConversionStatus(hIMC: THandle; var lpfdwConversion, lpfdwSentence: DWORD): BOOL; stdcall; external 'imm32.dll' name 'ImmGetConversionStatus';
+function ImmSetConversionStatus(hIMC: THandle; fdwConversion, fdwSentence: DWORD): BOOL; stdcall; external 'imm32.dll' name 'ImmSetConversionStatus';
 
 function TVirtualTouchKeyboard.GetTabTipPath : string;
 const
@@ -256,8 +294,97 @@ begin
     end;
 end;
 
+function TargetWindow(aWnd : HWND) : HWND;
+begin
+  Result := aWnd;
+  if (Result = 0) then Result := GetFocus;
+  if (Result = 0) then Result := GetForegroundWindow;
+end;
+
+function TVirtualTouchKeyboard.IsKoreanInstalled : boolean;
+var
+  TempList : array of HKL;
+  TempDummy : HKL;
+  TempCount, i : integer;
+begin
+  Result    := False;
+  TempDummy := 0;
+  TempCount := GetKeyboardLayoutList(0, TempDummy);
+  if (TempCount <= 0) then exit;
+
+  SetLength(TempList, TempCount);
+  TempCount := GetKeyboardLayoutList(TempCount, TempList[0]);
+
+  for i := 0 to pred(TempCount) do
+    if ((DWORD(TempList[i]) and $FFFF) = KOREAN_LANGID) then
+      begin
+        Result := True;
+        break;
+      end;
+end;
+
+function TVirtualTouchKeyboard.ActivateKorean(aWnd : HWND) : boolean;
+var
+  TempLayout : HKL;
+  TempWnd    : HWND;
+begin
+  TempLayout := LoadKeyboardLayout(KOREAN_KLID, KLF_ACTIVATE);
+  Result     := (TempLayout <> 0);
+
+  if Result then
+    begin
+      TempWnd := TargetWindow(aWnd);
+
+      // Make it the input language of this thread and of the target window.
+      ActivateKeyboardLayout(TempLayout, 0);
+      if (TempWnd <> 0) then
+        SendMessage(TempWnd, WM_INPUTLANGCHANGEREQUEST, 0, LPARAM(TempLayout));
+    end;
+end;
+
+function TVirtualTouchKeyboard.SetHangulMode(aHangul : boolean; aWnd : HWND) : boolean;
+var
+  TempWnd : HWND;
+  TempIMC : THandle;
+  TempConversion, TempSentence : DWORD;
+begin
+  Result  := False;
+  TempWnd := TargetWindow(aWnd);
+  if (TempWnd = 0) then exit;
+
+  TempIMC := ImmGetContext(TempWnd);
+  if (TempIMC = 0) then exit;
+
+  try
+    if ImmGetConversionStatus(TempIMC, TempConversion, TempSentence) then
+      begin
+        if aHangul then
+          TempConversion := TempConversion or IME_CMODE_NATIVE_HANGUL
+         else
+          TempConversion := TempConversion and not(DWORD(IME_CMODE_NATIVE_HANGUL));
+
+        Result := ImmSetConversionStatus(TempIMC, TempConversion, TempSentence);
+      end;
+  finally
+    ImmReleaseContext(TempWnd, TempIMC);
+  end;
+end;
+
+procedure TVirtualTouchKeyboard.ShowKorean(aWnd : HWND);
+begin
+  if ActivateKorean(aWnd) then
+    SetHangulMode(True, aWnd);
+
+  Show;
+end;
+
 procedure TVirtualTouchKeyboard.Show;
 begin
+  if FAutoKorean then
+    begin
+      if ActivateKorean then SetHangulMode(True);
+    end;
+
   if not(Visible) then
     begin
       if Executing then

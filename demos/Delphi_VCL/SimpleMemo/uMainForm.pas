@@ -19,10 +19,12 @@ type
     VirtualTouchKeyboard1: TVirtualTouchKeyboard;
     Memo1: TMemo;
     ShowBtn: TButton;
+    ShowKoreanBtn: TButton;
     HideBtn: TButton;
     Panel1: TPanel;
     procedure HideBtnClick(Sender: TObject);
     procedure ShowBtnClick(Sender: TObject);
+    procedure ShowKoreanBtnClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -44,6 +46,16 @@ end;
 procedure TMainForm.ShowBtnClick(Sender: TObject);
 begin
   VirtualTouchKeyboard1.Show;
+end;
+
+procedure TMainForm.ShowKoreanBtnClick(Sender: TObject);
+begin
+  // Activates the Korean layout in Hangul mode and shows the keyboard.
+  // Windows must have a Korean keyboard installed (see IsKoreanInstalled).
+  if VirtualTouchKeyboard1.IsKoreanInstalled then
+    VirtualTouchKeyboard1.ShowKorean
+   else
+    ShowMessage('Korean keyboard is not installed in Windows.');
 end;
 
 end.
