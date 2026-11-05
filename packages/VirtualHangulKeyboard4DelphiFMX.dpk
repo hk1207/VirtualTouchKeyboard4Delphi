@@ -1,0 +1,17 @@
+package VirtualHangulKeyboard4DelphiFMX;
+
+{$DESCRIPTION 'Hangul virtual keyboard (FMX)'}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  fmx;
+
+contains
+  VirtualHangulKeyboard4DelphiFMX_register in 'VirtualHangulKeyboard4DelphiFMX_register.pas',
+  uVirtualHangulKeyboardFMX in '..\source\uVirtualHangulKeyboardFMX.pas',
+  uVirtualHangulEngine in '..\source\uVirtualHangulEngine.pas',
+  uHangulComposer in '..\source\uHangulComposer.pas',
+  uHangulWinOutput in '..\source\uHangulWinOutput.pas';
+
+end.
