@@ -1,0 +1,17 @@
+package VirtualHangulKeyboard4Delphi;
+
+{$DESCRIPTION 'Hangul virtual keyboard (VCL)'}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vcl;
+
+contains
+  VirtualHangulKeyboard4Delphi_register in 'VirtualHangulKeyboard4Delphi_register.pas',
+  uVirtualHangulKeyboard in '..\source\uVirtualHangulKeyboard.pas',
+  uVirtualHangulEngine in '..\source\uVirtualHangulEngine.pas',
+  uHangulComposer in '..\source\uHangulComposer.pas',
+  uHangulWinOutput in '..\source\uHangulWinOutput.pas';
+
+end.

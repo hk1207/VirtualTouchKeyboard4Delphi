@@ -9,6 +9,13 @@ VirtualTouchKeyboard4Delphi was developed and tested on Delphi 13, Delphi 7 and 
 * [Installation in Delphi](https://github.com/salvadordf/VirtualTouchKeyboard4Delphi/wiki/Installation-in-Delphi)
 * [Installation in Lazarus FPC](https://github.com/salvadordf/VirtualTouchKeyboard4Delphi/wiki/Installation-in-Lazarus-FPC)
 
+## Hangul virtual keyboard (without TabTip.exe)
+`TVirtualHangulKeyboard` (VCL) and `TVirtualHangulKeyboardFMX` (FMX) draw their own keyboard and type Hangul with `SendInput`, so they don't need `TabTip.exe` or a Korean IME. They support the Dubeolsik and Cheonjiin layouts, English letters and symbols. Use the layout key of the keyboard (or the `Layout` property) to select the layout.
+
+* Packages : `packages/VirtualHangulKeyboard4Delphi.dpk` (VCL) and `packages/VirtualHangulKeyboard4DelphiFMX.dpk` (FMX).
+* Demos : `demos/Delphi_VCL/HangulKeyboard` and `demos/Delphi_FMX/HangulKeyboard` (the form is created in code, no package installation needed).
+* The Hangul composer and the keyboard logic have no Windows dependencies. They can be tested with Free Pascal : `cd tests && fpc -Mdelphi -Fu../source TestHangul.pas`.
+
 ## Screenshot
 <img width="950" height="669" alt="SimpleMemo" src="https://github.com/user-attachments/assets/cd485deb-e874-4a05-9397-28613f99a855" />
 
