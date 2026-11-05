@@ -130,7 +130,9 @@ end;
 var
   TempOut : TTestOutput;
   TempEng : THangulEngine;
+  TempRepeat, i : integer;
 begin
+  TempRepeat := 0;
   // ---- Dubeolsik ----
   Dubeol('han-geul',        'ㅎㅏㄴㄱㅡㄹ', '한글');
   Dubeol('ilg-eo',          'ㅇㅣㄹㄱㅇㅓ', '읽어');
@@ -239,6 +241,25 @@ begin
     Press(TempEng, '.');  Check('punct 1', '갑 .', TempOut.Screen);
     Press(TempEng, '.');  Check('punct 2', '갑 ,', TempOut.Screen);
     Press(TempEng, '.');  Check('punct 3', '갑 ?', TempOut.Screen);
+  finally
+    TempEng.Free;
+    TempOut.Free;
+  end;
+
+  // Only the backspace key repeats
+  TempOut := TTestOutput.Create;
+  TempEng := THangulEngine.Create(TempOut);
+  try
+    TypeKeys(TempEng, 'ㅎㅏㄴㄱㅡㄹ');
+    for i := 0 to pred(TempEng.KeyCount) do
+      if TempEng.IsRepeatKey(i) then
+        begin
+          inc(TempRepeat);
+          TempEng.PressKey(i); TempEng.PressKey(i); TempEng.PressKey(i);
+          TempEng.PressKey(i); TempEng.PressKey(i);
+        end;
+    Check('repeat keys', '1', IntToStr(TempRepeat));
+    Check('backspace repeat', '', TempOut.Screen);
   finally
     TempEng.Free;
     TempOut.Free;

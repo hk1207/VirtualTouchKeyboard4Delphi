@@ -12,10 +12,17 @@ unit uVirtualHangulEngine;
 // This file contains only ASCII characters on purpose: all the Hangul
 // characters are written as Unicode code points.
 
+{$I VirtualTouchKeyboard.inc}
+
 interface
 
 uses
-  Classes, uHangulComposer;
+  {$IFDEF DELPHI16_UP}
+    System.Classes,
+  {$ELSE}
+    Classes,
+  {$ENDIF}
+  uHangulComposer;
 
 const
   HANGUL_GRID_COLS = 20;
@@ -120,6 +127,11 @@ type
       /// control is not changed. Call it when the user moves the caret.
       /// </summary>
       procedure ResetComposition;
+      /// <summary>
+      /// Returns true if the key has to be repeated while it's held down
+      /// (the backspace key).
+      /// </summary>
+      function  IsRepeatKey(aIndex : integer) : boolean;
 
       property KeyCount           : integer             read FKeyCount;
       property Keys[aIndex : integer] : THangulKey      read GetKey;
@@ -524,6 +536,11 @@ begin
    else
     if (FOutput <> nil) then
       FOutput.SendBackspace;
+end;
+
+function THangulEngine.IsRepeatKey(aIndex : integer) : boolean;
+begin
+  Result := (aIndex >= 0) and (aIndex < FKeyCount) and (FKeys[aIndex].Kind = kkBackspace);
 end;
 
 procedure THangulEngine.ReleaseShift;

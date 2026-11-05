@@ -32,6 +32,7 @@ type
       FKeyTextColor   : TAlphaColor;
       FBackColor      : TAlphaColor;
       FFontSize       : Single;
+      FRepeatTimer    : TTimer;
 
       function  GetLayout : THangulLayout;
       procedure SetLayout(aValue : THangulLayout);
@@ -39,6 +40,8 @@ type
       procedure SetKorean(aValue : boolean);
 
       procedure EngineChange(Sender : TObject);
+      procedure RepeatTimerEvent(Sender : TObject);
+      procedure StopRepeat;
       function  KeyRect(aIndex : integer) : TRectF;
       function  KeyAt(aX, aY : Single) : integer;
 
@@ -83,7 +86,9 @@ type
 implementation
 
 const
-  KEY_GAP = 3;
+  KEY_GAP         = 3;
+  REPEAT_DELAY    = 450;   // ms before a held key starts to repeat
+  REPEAT_INTERVAL = 60;    // ms between repeated key presses
 
 constructor TVirtualHangulKeyboardFMX.Create(AOwner : TComponent);
 begin
@@ -100,6 +105,10 @@ begin
   FBackColor       := $FF808080;
   FFontSize        := 16;
 
+  FRepeatTimer         := TTimer.Create(self);
+  FRepeatTimer.Enabled := False;
+  FRepeatTimer.OnTimer := RepeatTimerEvent;
+
   CanFocus := False;
   HitTest  := True;
   Width    := 560;
@@ -108,6 +117,7 @@ end;
 
 destructor TVirtualHangulKeyboardFMX.Destroy;
 begin
+  StopRepeat;
   FEngine.Free;
   FOutput.Free;
 
@@ -136,8 +146,26 @@ end;
 
 procedure TVirtualHangulKeyboardFMX.EngineChange(Sender : TObject);
 begin
+  StopRepeat;
   FDownKey := -1;
   Repaint;
+end;
+
+procedure TVirtualHangulKeyboardFMX.StopRepeat;
+begin
+  if (FRepeatTimer <> nil) then
+    FRepeatTimer.Enabled := False;
+end;
+
+procedure TVirtualHangulKeyboardFMX.RepeatTimerEvent(Sender : TObject);
+begin
+  if (FDownKey < 0) then
+    StopRepeat
+   else
+    begin
+      FRepeatTimer.Interval := REPEAT_INTERVAL;
+      FEngine.PressKey(FDownKey);
+    end;
 end;
 
 function TVirtualHangulKeyboardFMX.KeyRect(aIndex : integer) : TRectF;
@@ -151,7 +179,7 @@ begin
   Result.Top    := (TempKey.Row * Height) / FEngine.GridRows;
   Result.Bottom := ((TempKey.Row + 1) * Height) / FEngine.GridRows;
 
-  InflateRect(Result, -KEY_GAP, -KEY_GAP);
+  Result.Inflate(-KEY_GAP, -KEY_GAP);
 end;
 
 function TVirtualHangulKeyboardFMX.KeyAt(aX, aY : Single) : integer;
@@ -178,7 +206,8 @@ begin
   Canvas.Fill.Color := FBackColor;
   Canvas.FillRect(LocalRect, 0, 0, [], 1);
 
-  Canvas.Font.Size := FFontSize;
+  Canvas.Font.Family := 'Malgun Gothic';
+  Canvas.Font.Size   := FFontSize;
 
   for i := 0 to pred(FEngine.KeyCount) do
     begin
@@ -204,19 +233,28 @@ begin
 end;
 
 procedure TVirtualHangulKeyboardFMX.MouseDown(Button : TMouseButton; Shift : TShiftState; X, Y : Single);
+var
+  TempKey : integer;
 begin
   inherited MouseDown(Button, Shift, X, Y);
 
   if (Button = TMouseButton.mbLeft) and not(csDesigning in ComponentState) then
     begin
-      FDownKey := KeyAt(X, Y);
+      TempKey  := KeyAt(X, Y);
+      FDownKey := TempKey;
 
-      if (FDownKey >= 0) then
+      if (TempKey >= 0) then
         begin
           Repaint;
           // The key is typed when it's pressed. PressKey might rebuild the keys
           // and call EngineChange, which clears FDownKey.
-          FEngine.PressKey(FDownKey);
+          FEngine.PressKey(TempKey);
+
+          if (FDownKey = TempKey) and FEngine.IsRepeatKey(TempKey) then
+            begin
+              FRepeatTimer.Interval := REPEAT_DELAY;
+              FRepeatTimer.Enabled  := True;
+            end;
         end;
     end;
 end;
@@ -224,6 +262,8 @@ end;
 procedure TVirtualHangulKeyboardFMX.MouseUp(Button : TMouseButton; Shift : TShiftState; X, Y : Single);
 begin
   inherited MouseUp(Button, Shift, X, Y);
+
+  StopRepeat;
 
   if (FDownKey >= 0) then
     begin

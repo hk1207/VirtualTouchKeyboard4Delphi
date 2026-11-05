@@ -4,7 +4,7 @@ interface
 
 uses
   System.Classes, FMX.Types, FMX.Controls, FMX.Forms, FMX.StdCtrls,
-  FMX.Memo, FMX.Edit, FMX.Controls.Presentation, FMX.ScrollBox,
+  FMX.Memo.Types, FMX.Memo, FMX.Edit, FMX.Controls.Presentation, FMX.ScrollBox,
   uVirtualHangulKeyboardFMX, uVirtualHangulEngine;
 
 type
@@ -13,6 +13,7 @@ type
       Edit1    : TEdit;
       Memo1    : TMemo;
       Keyboard : TVirtualHangulKeyboardFMX;
+      procedure FormShowEvent(Sender : TObject);
     public
       constructor Create(AOwner : TComponent); override;
   end;
@@ -44,7 +45,12 @@ begin
   Memo1.Parent := Self;
   Memo1.Align  := TAlignLayout.Client;
 
-  ActiveControl := Memo1;
+  OnShow := FormShowEvent;
+end;
+
+procedure TMainForm.FormShowEvent(Sender : TObject);
+begin
+  Memo1.SetFocus;
 end;
 
 end.

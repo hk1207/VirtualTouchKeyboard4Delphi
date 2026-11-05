@@ -46,7 +46,7 @@ begin
 
   TempInputs[0].Itype       := INPUT_KEYBOARD;
   TempInputs[0].ki.wVk      := aVirtualKey;
-  TempInputs[0].ki.wScan    := MapVirtualKey(aVirtualKey, 0);
+  TempInputs[0].ki.wScan    := Word(MapVirtualKey(aVirtualKey, 0));
 
   TempInputs[1]             := TempInputs[0];
   TempInputs[1].ki.dwFlags  := KEYEVENTF_KEYUP;
